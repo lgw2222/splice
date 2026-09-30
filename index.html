@@ -43,9 +43,10 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
 .play{width:44px;height:44px;border-radius:50%;background:var(--amber);border:0;color:#1C2230;display:grid;place-items:center}
 .tc{font:600 28px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.5px}
 .tc small{color:var(--dim);font-size:18px}
-.timeline{position:relative;margin:0 16px 14px;height:78px;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;cursor:pointer;touch-action:none}
+.timeline{position:relative;margin:0 16px 14px;height:98px;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;cursor:pointer;touch-action:none}
 .track{position:absolute;left:0;right:0}
-.track.v{top:8px;height:34px}.track.t{top:48px;height:22px}
+.track.v{top:8px;height:34px}.track.t{top:48px;height:22px}.track.c{top:76px;height:14px}
+.track.c .blk{background:var(--amber);opacity:.8;padding:0;border-right:1px solid var(--panel);border-radius:2px}
 .blk{position:absolute;top:0;bottom:0;border-radius:4px;padding:2px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#10151f;font-weight:600}
 .track.v .blk{background:var(--teal);border-right:2px solid var(--panel)}
 .track.v .blk.sel{box-shadow:inset 0 0 0 2px var(--text)}
@@ -54,8 +55,8 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
 .playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--amber);pointer-events:none}
 .playhead::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top-color:var(--amber)}
 aside{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
-.tabs{display:flex;border-bottom:1px solid var(--line)}
-.tabs button{flex:1;background:none;border:0;padding:12px 4px;color:var(--dim);font:600 17px "Barlow Condensed",sans-serif;border-bottom:3px solid transparent}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{flex:1 0 auto;background:none;border:0;padding:12px 7px;color:var(--dim);font:600 16px "Barlow Condensed",sans-serif;border-bottom:3px solid transparent;white-space:nowrap}
 .tabs button.on{color:var(--text);border-bottom-color:var(--amber)}
 .pane{display:none;overflow:auto;padding:14px 16px 24px;flex:1}
 .pane.on{display:block}
@@ -90,6 +91,11 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--line);border-rad
 .card h2{font:600 26px "Barlow Condensed",sans-serif;margin:0 0 8px}
 .bar{height:10px;background:var(--base);border-radius:5px;overflow:hidden;margin:14px 0}
 .bar div{height:100%;width:0;background:var(--amber)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--dim)}
+.btn.on{border-color:var(--amber);color:var(--amber)}
+.cap-line{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.cap-line.cur input{border-color:var(--amber)}
+.cap-line .btn{font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raised);border:1px solid var(--line);padding:9px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 @media (max-width:860px){
@@ -132,6 +138,7 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--line);border-rad
     <div class="timeline" id="timeline">
       <div class="track v" id="trackV"></div>
       <div class="track t" id="trackT"></div>
+      <div class="track c" id="trackC"></div>
       <div class="playhead" id="playhead"></div>
     </div>
   </section>
@@ -141,6 +148,7 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--line);border-rad
       <button class="on" data-tab="clips">Clips</button>
       <button data-tab="filters">Filters</button>
       <button data-tab="text">Text</button>
+      <button data-tab="captions">Captions</button>
       <button data-tab="library">Library</button>
       <button data-tab="project">Project</button>
     </div>
@@ -173,6 +181,49 @@ input[type=color]{width:40px;height:32px;border:1px solid var(--line);border-rad
       <div class="row"><button class="btn primary" id="addText">Add text at playhead</button></div>
       <div id="textList" style="margin-top:10px"></div>
       <div id="textEditor"></div>
+    </div>
+
+    <div class="pane" id="pane-captions">
+      <h3>Auto captions</h3>
+      <div class="grid2">
+        <label>Listen to<select id="capSource"><option value="clips">Video clips</option><option value="music">Music track</option></select></label>
+        <label>Language<select id="capLang"><option value="en">English</option><option value="auto">Auto-detect</option><option value="spanish">Spanish</option><option value="french">French</option><option value="german">German</option><option value="portuguese">Portuguese</option><option value="italian">Italian</option></select></label>
+      </div>
+      <div class="grid2" style="grid-template-columns:1fr;margin-top:8px">
+        <label>Accuracy<select id="capModel"><option value="tiny">Fast: 40 MB download, clear talking</option><option value="base" selected>Balanced: 80 MB download</option><option value="small">Accurate: 250 MB download, best for songs</option></select></label>
+      </div>
+      <div class="row" style="margin-top:8px"><label class="chk"><input type="checkbox" id="capSong"> Song mode (focus on vocals over the music)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="capGpu"> GPU mode (faster, falls back automatically if it fails)</label></div>
+      <p class="hint" id="capGpuHint" style="margin-top:0"></p>
+      <div class="row"><button class="btn primary" id="capGo">Generate captions</button><button class="btn" id="capStop" hidden>Stop</button></div>
+      <p class="hint" id="capStatus">Runs entirely on this computer, free. The first run downloads the speech model once; after that it works offline.</p>
+      <div class="bar" id="capBarWrap" hidden><div id="capBar"></div></div>
+      <h3>Style</h3>
+      <div class="row" id="capStyles"></div>
+      <div class="grid2" style="margin-top:6px">
+        <label>Font<select id="capFont" data-cap="font"></select></label>
+        <label>Words per line<select id="capWpl" data-cap="wpl"></select></label>
+      </div>
+      <label class="f">Size<input type="range" min="30" max="200" step="1" data-cap="size"><output></output></label>
+      <label class="f">Position<input type="range" min="0.05" max="0.95" step="0.01" data-cap="y"><output></output></label>
+      <label class="f">Outline<input type="range" min="0" max="8" step="0.5" data-cap="stroke"><output></output></label>
+      <div class="row">
+        <label class="hint" style="display:flex;gap:6px;align-items:center;margin:0">Text <input type="color" data-cap="color"></label>
+        <label class="hint" style="display:flex;gap:6px;align-items:center;margin:0">Highlight <input type="color" data-cap="hi"></label>
+        <label class="hint" style="display:flex;gap:6px;align-items:center;margin:0">Box <input type="color" data-cap="box"></label>
+      </div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" data-cap="caps"> All caps</label>
+        <label class="chk"><input type="checkbox" data-cap="bg"> Background box</label>
+        <label class="chk"><input type="checkbox" data-cap="shadow"> Shadow</label>
+        <label class="chk"><input type="checkbox" data-cap="show"> Show captions</label>
+      </div>
+      <h3>Lines</h3>
+      <p class="hint">Edit a line and press Enter to fix it. If the captions run ahead of or behind the audio, shift them.</p>
+      <div class="row"><button class="btn sm" id="capEarlier">Shift earlier 0.1s</button><button class="btn sm" id="capLater">Shift later 0.1s</button></div>
+      <div id="capLines"></div>
+      <div class="row"><button class="btn sm" id="capImport">Import .srt</button><button class="btn sm" id="capExport">Export .srt</button><button class="btn sm danger" id="capClear">Clear captions</button></div>
+      <input type="file" hidden id="capSrtIn" accept=".srt,.vtt,text/plain">
     </div>
 
     <div class="pane" id="pane-library">
@@ -580,6 +631,7 @@ function render(){
     octx.drawImage(glc, 0, 0);
   }
   drawTexts(state.t, W, H);
+  drawCaptions(state.t, W, H);
 }
 
 // ---------- text overlays ----------
@@ -825,6 +877,8 @@ function renderTimeline(){
     b.style.left = (tx.start/T*100)+'%'; b.style.width = (Math.max(0.2,(Math.min(tx.end,T)-tx.start))/T*100)+'%';
     b.textContent = tx.text.split('\n')[0]; tt.appendChild(b);
   });
+  const tc = $('#trackC'); tc.innerHTML = '';
+  cap.lines.forEach(l=>{ const b = document.createElement('div'); b.className = 'blk'; b.style.left = (l.start/T*100)+'%'; b.style.width = (Math.max(0.1, l.end - l.start)/T*100)+'%'; tc.appendChild(b); });
 }
 let scrubbing = false;
 const tl = $('#timeline');
@@ -836,6 +890,7 @@ function updateTransport(){
   const T = total();
   $('#tc').innerHTML = `${fmt(state.t)} <small>/ ${fmt(T)}</small>`;
   $('#playhead').style.left = (T ? state.t/T*100 : 0) + '%';
+  markCurrentCapLine();
 }
 
 // ---------- music ----------
@@ -1113,7 +1168,7 @@ function refreshLibraryUI(){
     });
   };
   list('font','#fontList'); list('lut','#lutList'); list('look','#lookList'); list('shader','#shaderList');
-  renderPresets(); syncFxUI(); renderTextEditor();
+  renderPresets(); syncFxUI(); renderTextEditor(); syncCapUI();
 }
 function editShader(it){
   editingShader = it.id; $('#shName').value = it.name; $('#shCode').value = it.code;
@@ -1186,7 +1241,362 @@ function initLibrary(){
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
-initLibrary(); buildFiltersUI(); renderTextEditor(); renderTimeline(); requestAnimationFrame(tick); loadLibrary();
+// ---------- auto captions (Whisper, running locally in a background worker) ----------
+const cap = {
+  lines:[], busy:false, stopped:false,
+  style:{preset:'highlight', font:'Montserrat', size:78, y:0.72, stroke:3, color:'#ffffff', hi:'#F2E14A', box:'#000000', caps:true, bg:false, shadow:true, show:true, wpl:3}
+};
+const CAP_PRESETS = [['highlight','Highlight'],['box','Word box'],['pop','Pop'],['karaoke','Karaoke'],['plain','Plain']];
+const WORKER_SRC = `
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
+env.allowLocalModels = false;
+let asr = null, key = '';
+self.onmessage = async (e) => {
+  const d = e.data;
+  if (d.type !== 'run') return;
+  try {
+    if (!asr || key !== d.model + d.device) {
+      asr = null;
+      const opts = { progress_callback: p => self.postMessage({ type: 'load', p: p }) };
+      if (d.device === 'webgpu') { opts.device = 'webgpu'; opts.dtype = { encoder_model: 'fp32', decoder_model_merged: 'q4' }; }
+      else { opts.dtype = 'q8'; }
+      asr = await pipeline('automatic-speech-recognition', d.model, opts);
+      key = d.model + d.device;
+    }
+    self.postMessage({ type: 'status' });
+    const base = { chunk_length_s: 30, stride_length_s: 5 };
+    if (d.language) { base.language = d.language; base.task = 'transcribe'; }
+    let out, mode = 'word';
+    try { out = await asr(d.audio, Object.assign({}, base, { return_timestamps: 'word' })); }
+    catch (err) { mode = 'segment'; out = await asr(d.audio, Object.assign({}, base, { return_timestamps: true })); }
+    self.postMessage({ type: 'done', out: out, mode: mode });
+  } catch (err) {
+    self.postMessage({ type: 'error', msg: String((err && err.message) || err) });
+  }
+};`;
+let capWorker = null, capJob = null, capTimer = null;
+function getCapWorker(){
+  if(capWorker) return capWorker;
+  capWorker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'})), {type:'module'});
+  capWorker.onmessage = e => capJob && capJob(e.data);
+  capWorker.onerror = e => capJob && capJob({type:'error', msg:(e && e.message) || 'The caption engine could not start. The first run needs an internet connection to download it.'});
+  return capWorker;
+}
+function transcribe(audio, model, language, device, onLoad){
+  return new Promise((res, rej)=>{
+    capJob = m => {
+      if(m.type==='load') onLoad(m.p);
+      else if(m.type==='status') setCapStatus('Listening and writing captions', true);
+      else if(m.type==='done'){ capJob = null; res(m); }
+      else if(m.type==='error' || m.type==='stop'){ capJob = null; rej(new Error(m.msg || 'stopped')); }
+    };
+    const copy = audio.slice();
+    getCapWorker().postMessage({type:'run', audio:copy, model, language, device}, [copy.buffer]);
+  });
+}
+function stopCaptions(){
+  cap.stopped = true;
+  if(capWorker){ capWorker.terminate(); capWorker = null; }
+  if(capJob) capJob({type:'stop', msg:'stopped'});
+  setCapStatus('Stopped.');
+}
+function setCapStatus(msg, timed){
+  clearInterval(capTimer); const el = $('#capStatus');
+  if(!timed){ el.textContent = msg; return; }
+  const t0 = Date.now(); const upd = ()=>{ el.textContent = `${msg}… ${Math.round((Date.now()-t0)/1000)}s`; };
+  upd(); capTimer = setInterval(upd, 1000);
+}
+async function decodeTo16k(url, from, to, songMode){
+  const buf = await (await fetch(url)).arrayBuffer();
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  let decoded;
+  try { decoded = await ac.decodeAudioData(buf); } finally { ac.close(); }
+  from = clamp(from || 0, 0, decoded.duration);
+  to = clamp(to == null || !isFinite(to) ? decoded.duration : to, from, decoded.duration);
+  const len = Math.max(1, Math.ceil((to - from) * 16000));
+  const oc = new OfflineAudioContext(1, len, 16000);
+  const src = oc.createBufferSource(); src.buffer = decoded;
+  let node = src;
+  if(songMode){
+    // keep the vocal range, lift presence, cut bass and cymbals
+    const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 160;
+    const pk = oc.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 2500; pk.gain.value = 5; pk.Q.value = 0.8;
+    const lp = oc.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5500;
+    node.connect(hp); hp.connect(pk); pk.connect(lp); node = lp;
+  }
+  node.connect(oc.destination);
+  src.start(0, from, to - from);
+  const out = (await oc.startRendering()).getChannelData(0);
+  let peak = 0; for(let i=0;i<out.length;i+=8) peak = Math.max(peak, Math.abs(out[i]));
+  if(peak > 0.001 && peak < 0.7){ const g = 0.9/peak; for(let i=0;i<out.length;i++) out[i] *= g; }
+  return out;
+}
+function toWords(res, offset, len){
+  const out = [], chunks = (res.out && res.out.chunks) || [];
+  if(res.mode==='word'){
+    chunks.forEach(c=>{
+      const t = (c.text||'').trim(); if(!t) return;
+      let [s, e] = c.timestamp || []; if(s == null) return;
+      if(e == null || e <= s) e = s + 0.3;
+      out.push({t, s:offset + Math.min(s, len), e:offset + Math.min(e, len)});
+    });
+  } else {
+    chunks.forEach(c=>{
+      const ws = (c.text||'').trim().split(/\s+/).filter(Boolean);
+      let [s, e] = c.timestamp || []; if(s == null || !ws.length) return;
+      if(e == null || e <= s) e = Math.min(len, s + ws.length*0.4);
+      const d = (e - s)/ws.length;
+      ws.forEach((t,i)=>out.push({t, s:offset + s + i*d, e:offset + s + (i+1)*d}));
+    });
+  }
+  return out.filter(w=>!/^[\[(].*[\])]$/.test(w.t) && !/^[♪♫\s]+$/.test(w.t));
+}
+function groupWords(words, maxWords){
+  const lines = []; let cur = [];
+  const flush = ()=>{ if(cur.length){ lines.push({id:uid++, start:cur[0].s, end:cur[cur.length-1].e, words:cur}); cur = []; } };
+  words.forEach(w=>{
+    const prev = cur[cur.length-1];
+    if(prev && w.s - prev.e > 0.8) flush();
+    cur.push(w);
+    if(cur.length >= maxWords || /[.!?]["']?$/.test(w.t) || (/[,;:]$/.test(w.t) && cur.length >= 2)) flush();
+  });
+  flush();
+  lines.forEach((l,i)=>{ const next = lines[i+1]; l.end = next ? Math.min(l.end + 0.35, next.start) : l.end + 0.35; });
+  return lines;
+}
+async function generateCaptions(){
+  if(cap.busy) return;
+  const source = $('#capSource').value;
+  let jobs = [];
+  if(source==='music'){
+    if(!music){ toast('Add a music track in the Project tab first.'); return; }
+    const md = music.el.duration, T = total();
+    jobs = [{url:music.el.src, from:0, to:T > 0 ? Math.min(md || T, T) : md, offset:0, name:$('#musicName').textContent}];
+  } else {
+    if(!state.clips.length){ toast('Add a video first.'); return; }
+    jobs = state.clips.map((c,i)=>({url:c.url, from:c.in, to:c.out, offset:clipStart(i), name:c.name}));
+  }
+  if(cap.lines.length && !confirm('Replace your current captions?')) return;
+  const lang = $('#capLang').value, size = $('#capModel').value;
+  const model = `Xenova/whisper-${size}${lang==='en' ? '.en' : ''}`;
+  const language = (lang==='en' || lang==='auto') ? null : lang;
+  let device = ($('#capGpu').checked && navigator.gpu) ? 'webgpu' : 'wasm';
+  const files = {};
+  const onLoad = p => {
+    if(p.status==='progress' && p.total){
+      files[p.file] = [p.loaded, p.total];
+      let L = 0, Tt = 0; Object.values(files).forEach(([l,t])=>{ L += l; Tt += t; });
+      clearInterval(capTimer);
+      $('#capStatus').textContent = `Downloading the speech model… ${Math.round(L/Tt*100)}% (first time only)`;
+    }
+  };
+  cap.busy = true; cap.stopped = false;
+  $('#capGo').disabled = true; $('#capStop').hidden = false; $('#capBarWrap').hidden = false; $('#capBar').style.width = '0%';
+  const words = [];
+  try {
+    for(let j=0;j<jobs.length;j++){
+      const job = jobs[j];
+      setCapStatus(`Reading the audio from ${job.name}`);
+      let audio;
+      try { audio = await decodeTo16k(job.url, job.from, job.to, $('#capSong').checked); }
+      catch(e){ toast(`${job.name} has no audio that can be read, so it was skipped.`); continue; }
+      if(cap.stopped) break;
+      if(audio.length < 16000*0.3) continue;
+      setCapStatus(jobs.length > 1 ? `Starting clip ${j+1} of ${jobs.length}` : 'Starting the caption engine', true);
+      let res;
+      try { res = await transcribe(audio, model, language, device, onLoad); }
+      catch(e){
+        if(cap.stopped) break;
+        if(device==='webgpu'){ device = 'wasm'; toast('GPU mode did not work here, so it switched to regular mode.'); res = await transcribe(audio, model, language, device, onLoad); }
+        else throw e;
+      }
+      words.push(...toWords(res, job.offset, job.to - job.from));
+      $('#capBar').style.width = ((j+1)/jobs.length*100) + '%';
+    }
+    if(cap.stopped) return;
+    if(!words.length){ setCapStatus('No speech or singing was found. Try Song mode or the Accurate setting.'); return; }
+    cap.lines = groupWords(words, cap.style.wpl);
+    renderCapLines(); renderTimeline();
+    setCapStatus(`Done: ${cap.lines.length} caption lines. Play it back and fix any wrong words in the list below.`);
+  } catch(e){
+    if(!cap.stopped) setCapStatus('Captions failed: ' + e.message + (navigator.onLine ? '' : ' The first run needs internet to download the speech model.'));
+  } finally {
+    cap.busy = false; clearInterval(capTimer);
+    $('#capGo').disabled = false; $('#capStop').hidden = true; $('#capBarWrap').hidden = true;
+  }
+}
+
+// drawing
+function hexA(hex, a){ const n = parseInt(hex.slice(1), 16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+function drawCaptions(t, W, H){
+  const st = cap.style;
+  if(!st.show || !cap.lines.length) return;
+  const line = cap.lines.find(l=>t >= l.start && t <= l.end); if(!line) return;
+  const px = Math.round(st.size * H / 1080);
+  octx.save();
+  octx.font = fontFor({font:st.font}, px); octx.textBaseline = 'middle'; octx.textAlign = 'left';
+  const words = line.words.map(w=>({...w, txt: st.caps ? w.t.toUpperCase() : w.t}));
+  const space = octx.measureText(' ').width * 1.1;
+  words.forEach(w=>w.w = octx.measureText(w.txt).width);
+  const maxW = W*0.88, rows = []; let row = [], rowW = 0;
+  for(const w of words){
+    const nw = row.length ? rowW + space + w.w : w.w;
+    if(nw > maxW && row.length){ rows.push({ws:row, w:rowW}); row = [w]; rowW = w.w; } else { row.push(w); rowW = nw; }
+  }
+  if(row.length) rows.push({ws:row, w:rowW});
+  const lh = px*1.25, cy = st.y*H, top = cy - (rows.length-1)*lh/2;
+  if(st.bg){
+    const bw = Math.max(...rows.map(r=>r.w)) + px*0.8, bh = rows.length*lh + px*0.35;
+    octx.fillStyle = hexA(st.box, 0.6); octx.beginPath();
+    if(octx.roundRect) octx.roundRect(W/2-bw/2, cy-bh/2, bw, bh, px*0.25); else octx.rect(W/2-bw/2, cy-bh/2, bw, bh);
+    octx.fill();
+  }
+  rows.forEach((r, ri)=>{
+    let x = W/2 - r.w/2; const y = top + ri*lh;
+    r.ws.forEach(w=>{ drawCapWord(w, x, y, t, px); x += w.w + space; });
+  });
+  octx.restore();
+}
+function drawCapWord(w, x, y, t, px){
+  const st = cap.style, p = st.preset, cur = t >= w.s && t < w.e, past = t >= w.e;
+  if(p==='pop' && t < w.s) return;
+  let sc = 1, color = st.color;
+  if(p==='highlight' && cur){ color = st.hi; sc = 1.1; }
+  if(p==='pop'){ sc = Math.max(0.01, easeBack(clamp((t - w.s)/0.16, 0, 1))); if(cur) color = st.hi; }
+  if(p==='box' && cur) sc = 1.06;
+  octx.save();
+  octx.translate(x + w.w/2, y); octx.scale(sc, sc); octx.translate(-w.w/2, 0);
+  if(p==='box' && cur){
+    const pad = px*0.14; octx.fillStyle = st.hi; octx.beginPath();
+    if(octx.roundRect) octx.roundRect(-pad, -px*0.62, w.w + pad*2, px*1.2, px*0.18); else octx.rect(-pad, -px*0.62, w.w + pad*2, px*1.2);
+    octx.fill();
+  }
+  if(st.shadow){ octx.shadowColor = 'rgba(0,0,0,.6)'; octx.shadowBlur = px*0.15; octx.shadowOffsetY = px*0.05; }
+  if(st.stroke > 0 && !(p==='box' && cur)){
+    octx.lineJoin = 'round'; octx.lineWidth = st.stroke*px/12; octx.strokeStyle = '#000'; octx.strokeText(w.txt, 0, 0);
+    octx.shadowColor = 'transparent';
+  }
+  if(p==='karaoke'){
+    octx.fillStyle = st.color; octx.fillText(w.txt, 0, 0); octx.shadowColor = 'transparent';
+    const f = past ? 1 : cur ? (t - w.s)/Math.max(0.01, w.e - w.s) : 0;
+    if(f > 0){ octx.save(); octx.beginPath(); octx.rect(-2, -px, (w.w + 4)*f, px*2); octx.clip(); octx.fillStyle = st.hi; octx.fillText(w.txt, 0, 0); octx.restore(); }
+  } else { octx.fillStyle = color; octx.fillText(w.txt, 0, 0); }
+  octx.restore();
+}
+
+// line editing
+function setLineText(l, text){
+  const ws = text.trim().split(/\s+/).filter(Boolean);
+  if(ws.length === l.words.length){ ws.forEach((t,i)=>l.words[i].t = t); return; }
+  const s = l.words.length ? l.words[0].s : l.start, e = l.words.length ? l.words[l.words.length-1].e : l.end, d = (e - s)/Math.max(1, ws.length);
+  l.words = ws.map((t,i)=>({t, s:s + i*d, e:s + (i+1)*d}));
+}
+function renderCapLines(){
+  const el = $('#capLines'); el.innerHTML = '';
+  if(!cap.lines.length){ el.innerHTML = '<p class="hint">No captions yet. Generate them above or import an .srt file.</p>'; return; }
+  const frag = document.createDocumentFragment();
+  cap.lines.forEach(l=>{
+    const d = document.createElement('div'); d.className = 'cap-line'; d.dataset.id = l.id;
+    d.innerHTML = `<button class="btn sm" data-a="go" title="Jump here">${fmt(l.start)}</button><input type="text" aria-label="Caption text" value="${esc(l.words.map(w=>w.t).join(' '))}"><button class="btn sm danger" data-a="del" aria-label="Delete line">✕</button>`;
+    d.querySelector('[data-a=go]').addEventListener('click', ()=>{ pause(); seek(l.start + 0.01); });
+    d.querySelector('[data-a=del]').addEventListener('click', ()=>{ cap.lines = cap.lines.filter(x=>x!==l); renderCapLines(); renderTimeline(); });
+    d.querySelector('input').addEventListener('change', e=>{
+      setLineText(l, e.target.value);
+      if(!l.words.length){ cap.lines = cap.lines.filter(x=>x!==l); renderCapLines(); }
+      renderTimeline();
+    });
+    frag.appendChild(d);
+  });
+  el.appendChild(frag);
+}
+let lastCapLine = null;
+function markCurrentCapLine(){
+  if(currentTab!=='captions') return;
+  const l = cap.lines.find(x=>state.t >= x.start && state.t <= x.end), id = l ? String(l.id) : null;
+  if(id === lastCapLine) return; lastCapLine = id;
+  document.querySelectorAll('.cap-line').forEach(d=>d.classList.toggle('cur', d.dataset.id === id));
+}
+function shiftCaptions(dt){
+  cap.lines.forEach(l=>{ l.start = Math.max(0, l.start + dt); l.end = Math.max(0.05, l.end + dt); l.words.forEach(w=>{ w.s = Math.max(0, w.s + dt); w.e = Math.max(0.05, w.e + dt); }); });
+  renderCapLines(); renderTimeline(); toast(`Captions moved ${dt > 0 ? 'later' : 'earlier'} by 0.1s`);
+}
+
+// .srt import / export
+function srtTime(t){
+  let ms = Math.round(Math.max(0, t)*1000);
+  const h = Math.floor(ms/3600000); ms -= h*3600000; const m = Math.floor(ms/60000); ms -= m*60000; const s = Math.floor(ms/1000); ms -= s*1000;
+  const p2 = n => String(n).padStart(2,'0');
+  return `${p2(h)}:${p2(m)}:${p2(s)},${String(ms).padStart(3,'0')}`;
+}
+function exportSrt(){
+  if(!cap.lines.length){ toast('There are no captions to export yet.'); return; }
+  const txt = cap.lines.map((l,i)=>`${i+1}\n${srtTime(l.start)} --> ${srtTime(l.end)}\n${l.words.map(w=>w.t).join(' ')}\n`).join('\n');
+  saveBlob(new Blob([txt], {type:'text/plain'}), 'captions.srt');
+}
+function parseSrtTime(s){ const m = s.match(/(?:(\d+):)?(\d+):(\d+)[,.](\d+)/); if(!m) return null; return (+(m[1]||0))*3600 + (+m[2])*60 + (+m[3]) + (+m[4].padEnd(3,'0').slice(0,3))/1000; }
+async function importSrt(f){
+  const blocks = (await f.text()).replace(/\r/g,'').split(/\n\s*\n/), lines = [];
+  blocks.forEach(b=>{
+    const rows = b.split('\n'), ti = rows.findIndex(r=>r.includes('-->')); if(ti < 0) return;
+    const [a, z] = rows[ti].split('-->'), s = parseSrtTime(a), e = parseSrtTime(z); if(s == null || e == null || e <= s) return;
+    const ws = rows.slice(ti+1).join(' ').replace(/<[^>]+>/g,'').trim().split(/\s+/).filter(Boolean); if(!ws.length) return;
+    const d = (e - s)/ws.length;
+    lines.push({id:uid++, start:s, end:e, words:ws.map((t,i)=>({t, s:s + i*d, e:s + (i+1)*d}))});
+  });
+  if(!lines.length){ toast(`${f.name} doesn't contain any captions Splice can read.`); return; }
+  cap.lines = lines; renderCapLines(); renderTimeline(); toast(`Imported ${lines.length} caption lines`);
+}
+
+// captions UI
+function syncCapUI(){
+  const st = cap.style, fs = $('#capFont');
+  fs.innerHTML = FONTS.map(f=>`<option value="${esc(f[0])}">${esc(f[1])}</option>`).join('');
+  if(!FONTS.find(f=>f[0]===st.font)) st.font = FONTS[0][0];
+  fs.value = st.font;
+  document.querySelectorAll('[data-cap]').forEach(inp=>{
+    const k = inp.dataset.cap; if(k==='font') return;
+    if(inp.type==='checkbox') inp.checked = !!st[k]; else inp.value = st[k];
+    const o = inp.parentNode.querySelector('output');
+    if(o) o.textContent = k==='y' ? Math.round(st[k]*100) + '%' : st[k];
+  });
+  document.querySelectorAll('#capStyles .btn').forEach(b=>b.classList.toggle('on', b.dataset.p === st.preset));
+}
+function initCaptions(){
+  const box = $('#capStyles');
+  CAP_PRESETS.forEach(([k,n])=>{
+    const b = document.createElement('button'); b.className = 'btn sm'; b.dataset.p = k; b.textContent = n;
+    b.addEventListener('click', ()=>{ cap.style.preset = k; syncCapUI(); if(!state.playing && cap.lines.length && !cap.lines.some(l=>state.t>=l.start && state.t<=l.end)) seek(cap.lines[0].start + 0.3); });
+    box.appendChild(b);
+  });
+  const wpl = $('#capWpl'); for(let i=1;i<=8;i++) wpl.insertAdjacentHTML('beforeend', `<option value="${i}">${i}</option>`);
+  document.querySelectorAll('[data-cap]').forEach(inp=>{
+    const k = inp.dataset.cap, ev = (inp.type==='checkbox' || inp.tagName==='SELECT') ? 'change' : 'input';
+    inp.addEventListener(ev, ()=>{
+      let v = inp.type==='checkbox' ? inp.checked : inp.value;
+      if(inp.type==='range') v = parseFloat(v);
+      if(k==='wpl'){
+        cap.style.wpl = parseInt(v);
+        if(cap.lines.length){ cap.lines = groupWords(cap.lines.flatMap(l=>l.words), cap.style.wpl); renderCapLines(); renderTimeline(); }
+        return;
+      }
+      cap.style[k] = v;
+      if(k==='font') document.fonts && document.fonts.load(fontFor({font:v}, 40));
+      syncCapUI();
+    });
+  });
+  $('#capGo').addEventListener('click', generateCaptions);
+  $('#capStop').addEventListener('click', stopCaptions);
+  $('#capEarlier').addEventListener('click', ()=>shiftCaptions(-0.1));
+  $('#capLater').addEventListener('click', ()=>shiftCaptions(0.1));
+  $('#capExport').addEventListener('click', exportSrt);
+  $('#capImport').addEventListener('click', ()=>$('#capSrtIn').click());
+  $('#capSrtIn').addEventListener('change', e=>{ const f = e.target.files[0]; e.target.value = ''; if(f) importSrt(f); });
+  $('#capClear').addEventListener('click', ()=>{ if(cap.lines.length && confirm('Delete all captions?')){ cap.lines = []; renderCapLines(); renderTimeline(); } });
+  if(navigator.gpu) $('#capGpuHint').textContent = 'Your browser supports GPU mode.';
+  syncCapUI(); renderCapLines();
+}
+
+initLibrary(); initCaptions(); buildFiltersUI(); renderTextEditor(); renderTimeline(); requestAnimationFrame(tick); loadLibrary();
 </script>
 </body>
 </html>
